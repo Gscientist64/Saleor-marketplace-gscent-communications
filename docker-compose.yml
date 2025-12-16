@@ -1,12 +1,13 @@
 version: '3.8'
 
 services:
+  # Database
   postgres:
     image: postgres:15-alpine
     restart: unless-stopped
     environment:
       POSTGRES_USER: saleor
-      POSTGRES_PASSWORD: saleor123
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
       POSTGRES_DB: saleor
     volumes:
       - postgres_data:/var/lib/postgresql/data
@@ -16,6 +17,7 @@ services:
       timeout: 10s
       retries: 3
 
+  # Cache
   redis:
     image: redis:7-alpine
     restart: unless-stopped
@@ -27,6 +29,7 @@ services:
       timeout: 10s
       retries: 3
 
+  # Saleor API
   api:
     image: ghcr.io/saleor/saleor:3.22
     restart: unless-stopped
@@ -36,18 +39,19 @@ services:
       redis:
         condition: service_healthy
     environment:
-      DATABASE_URL: postgres://saleor:saleor123@postgres:5432/saleor
+      DATABASE_URL: postgres://saleor:${DB_PASSWORD}@postgres:5432/saleor
       REDIS_URL: redis://redis:6379/0
-      SECRET_KEY: changeme_this_needs_to_be_changed_in_production_12345
-      ALLOWED_HOSTS: localhost,127.0.0.1,api
+      SECRET_KEY: ${SECRET_KEY}
+      ALLOWED_HOSTS: ${ALLOWED_HOSTS}
       DEBUG: "false"
-      DEFAULT_FROM_EMAIL: noreply@example.com
-      DEFAULT_CHANNEL_SLUG: gtech-laptops
-      EMAIL_URL: smtp://mailpit:1025
+      DEFAULT_FROM_EMAIL: ${DEFAULT_FROM_EMAIL}
+      DEFAULT_CHANNEL_SLUG: ${DEFAULT_CHANNEL_SLUG}
+      EMAIL_URL: ${EMAIL_URL}
       CELERY_BROKER_URL: redis://redis:6379/1
     volumes:
       - media_data:/app/media
 
+  # Saleor Dashboard
   dashboard:
     image: ghcr.io/saleor/saleor-dashboard:latest
     restart: unless-stopped
@@ -57,6 +61,7 @@ services:
       API_URI: http://api:8000/graphql/
       APP_MOUNT_URI: /dashboard/
 
+  # Saleor Worker
   worker:
     image: ghcr.io/saleor/saleor:3.22
     restart: unless-stopped
@@ -65,13 +70,28 @@ services:
       - redis
       - api
     environment:
-      DATABASE_URL: postgres://saleor:saleor123@postgres:5432/saleor
+      DATABASE_URL: postgres://saleor:${DB_PASSWORD}@postgres:5432/saleor
       REDIS_URL: redis://redis:6379/0
-      SECRET_KEY: changeme_this_needs_to_be_changed_in_production_12345
+      SECRET_KEY: ${SECRET_KEY}
       CELERY_BROKER_URL: redis://redis:6379/1
     volumes:
       - media_data:/app/media
 
+  # React Storefront
+  storefront:
+    build:
+      context: ./react-storefront
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    depends_on:
+      - api
+    environment:
+      NEXT_PUBLIC_SALEOR_API_URL: ${NEXT_PUBLIC_SALEOR_API_URL}
+      NEXT_PUBLIC_STOREFRONT_URL: ${NEXT_PUBLIC_STOREFRONT_URL}
+      NEXT_PUBLIC_DEFAULT_CHANNEL: ${NEXT_PUBLIC_DEFAULT_CHANNEL}
+      NODE_ENV: production
+
+  # Mailpit for email testing
   mailpit:
     image: axllent/mailpit
     restart: unless-stopped
