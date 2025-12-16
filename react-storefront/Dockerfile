@@ -5,11 +5,20 @@ FROM base AS deps
 RUN apk add --no-cache libc6-compat
 WORKDIR /app
 
+# Verify WORKDIR is set
+RUN pwd && ls -la
+
 ENV PNPM_HOME="/pnpm"
 ENV PATH="$PNPM_HOME:$PATH"
 RUN corepack enable
 
-COPY package.json pnpm-lock.yaml ./
+# COPY with explicit source paths
+COPY ./package.json /app/package.json
+COPY ./pnpm-lock.yaml /app/pnpm-lock.yaml
+
+# Verify files were copied
+RUN ls -la /app/
+
 RUN pnpm i --frozen-lockfile --prefer-offline
 
 # Rebuild the source code only when needed
