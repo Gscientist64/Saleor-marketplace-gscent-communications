@@ -77,11 +77,11 @@ services:
     volumes:
       - media_data:/app/media
 
-  # React Storefront
+  # React Storefront - FIXED VERSION
   storefront:
     build:
-      context: ./react-storefront
-      dockerfile: Dockerfile
+      context: .
+      dockerfile: react-storefront/Dockerfile
     restart: unless-stopped
     depends_on:
       - api
@@ -90,14 +90,13 @@ services:
       NEXT_PUBLIC_STOREFRONT_URL: ${NEXT_PUBLIC_STOREFRONT_URL}
       NEXT_PUBLIC_DEFAULT_CHANNEL: ${NEXT_PUBLIC_DEFAULT_CHANNEL}
       NODE_ENV: production
+    # Remove ports - Dokploy will handle routing via domains
 
   # Mailpit for email testing
   mailpit:
     image: axllent/mailpit
     restart: unless-stopped
-    ports:
-      - "1025:1025"
-      - "8025:8025"
+    # Remove ports - internal only
 
 volumes:
   postgres_data:
