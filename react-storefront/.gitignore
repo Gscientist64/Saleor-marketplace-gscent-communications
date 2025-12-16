@@ -7,6 +7,7 @@ gql/
 /node_modules
 /.pnp
 .pnp.js
+.npm
 
 # testing
 /coverage
@@ -40,3 +41,6 @@ next-env.d.ts
 
 .idea/
 .pnpm-store
+.out/
+.env.local
+.env.production.local
